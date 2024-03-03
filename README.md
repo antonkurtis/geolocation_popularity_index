@@ -35,7 +35,7 @@
 
 1. Docker
 2. Telegram Bot Api
-3. CatBoost
+3. python(ML/DL)
 4. GEOparse
 5. Scikit-learn
 
