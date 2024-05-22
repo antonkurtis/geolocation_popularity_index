@@ -1,0 +1,1 @@
+{"version": 0.6, "generator": "Overpass API 0.7.62.1 084b4234", "osm3s": {"timestamp_osm_base": "2024-05-14T02:07:54Z", "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."}, "elements": [{"type": "node", "id": 2344054512, "lat": 43.1685538, "lon": 131.9350978, "tags": {"amenity": "pharmacy", "source": "image"}}]}

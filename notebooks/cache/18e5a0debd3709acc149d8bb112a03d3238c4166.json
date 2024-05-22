@@ -1,0 +1,1 @@
+{"version": 0.6, "generator": "Overpass API 0.7.62.1 084b4234", "osm3s": {"timestamp_osm_base": "2024-05-03T02:50:59Z", "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."}, "elements": [{"type": "node", "id": 7906696770, "lat": 55.7437332, "lon": 37.567293, "tags": {"building": "kiosk", "disused:shop": "yes"}}]}

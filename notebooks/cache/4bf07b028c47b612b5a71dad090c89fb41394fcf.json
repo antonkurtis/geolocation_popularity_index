@@ -1,0 +1,1 @@
+{"version": 0.6, "generator": "Overpass API 0.7.62.1 084b4234", "osm3s": {"timestamp_osm_base": "2024-05-03T12:22:10Z", "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."}, "elements": [{"type": "node", "id": 1598901129, "lat": 43.1828808, "lon": 131.4890788, "tags": {"amenity": "fuel"}}]}

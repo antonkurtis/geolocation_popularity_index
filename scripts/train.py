@@ -2,30 +2,81 @@ import numpy as np
 import pandas as pd
 
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error
-from scripts.scr import *
+from sklearn.preprocessing import minmax_scale
+from catboost import Pool
+from sklearn.metrics import f1_score
+from datetime import datetime
+from catboost import CatBoostClassifier
 
+
+from scr import *
+
+DEFAULT_RANDOM_SEED = 42
 
 def train_model() -> None:
-    df_train = pd.read_csv('./data/train_initial.csv')
-    del df_train['Unnamed: 0']
+    
+    seedBasic(DEFAULT_RANDOM_SEED)
 
-    df_train['city'] = df_train['address_rus'].apply(get_city)
-    df_train['region'] = df_train['address_rus'].apply(get_region)
-    df_train = df_train.dropna()
+    df = pd.read_csv('./data/train_full.csv', index_col='Unnamed: 0')
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        pd.get_dummies(df_train).drop(['id', 'target'], axis=1),
-        pd.get_dummies(df_train)['target'],
-        test_size=0.2,
-        random_state=13)
+    df['target'] = minmax_scale(df['target'], feature_range=(1, 5), axis=0)
+    df['target'] = df['target'].apply(np.round).apply(int)
 
-    model = LinearRegression()
-    model.fit(X_train, y_train)
-    predicts = model.predict(X_test)
+    cat_features=[
+    'atm_group', 'city', 'city_area', 
+    'city_district', 'federal_district',
+    'administrative'
+    ]
 
-    err = mean_absolute_error(y_test, predicts)
+    df[cat_features] = df[cat_features].fillna('no_data')
+    df['administrative'] = df['administrative'].apply(str)
+    df['atm_group'] = df['atm_group'].apply(str)
+    df = df.fillna(0)
 
-    df_mae = pd.DataFrame({'MAE': [err]})
-    df_mae.to_csv('./outputs/mae.csv', index=False)
+    df.reset_index(drop=True, inplace=True)
+
+    df_train_val = df.drop(
+        ['id', 'address', 'address_rus','target'], axis=1
+        )
+    y_train_val = df['target']
+
+    X_train, X_val, y_train, y_val = train_test_split(
+        df_train_val, y_train_val, 
+        shuffle=True, 
+        stratify=y_train_val, 
+        train_size=0.8,
+        random_state=DEFAULT_RANDOM_SEED
+        )
+    
+    train_pool = Pool(
+        X_train, y_train,
+        cat_features=[
+            'atm_group', 'city', 'city_area', 
+            'city_district', 'federal_district',
+            'administrative'
+            ]
+            )
+
+    validation_pool = Pool(
+        X_val, y_val,
+        cat_features=[
+            'atm_group', 'city', 'city_area', 
+            'city_district', 'federal_district',
+            'administrative'
+            ]
+            )
+
+    print('Train dataset shape: {}\n'.format(train_pool.shape))
+
+    model = fit_model(train_pool, validation_pool)
+
+    err = f1_score(y_val, model.predict(X_val), average='micro')
+    df_f1 = pd.DataFrame({'f1_score': [err]})
+    df_f1.to_csv(f'./outputs/f1_score_{err}.csv', index=False)
+    today_date = datetime.today().strftime('%d-%m-%Y')
+
+    model.save_model(
+        f'./models/catboost_model_f1:{err}_date:{today_date}'
+        )
+    
+train_model()

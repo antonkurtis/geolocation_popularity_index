@@ -1,0 +1,1 @@
+{"version": 0.6, "generator": "Overpass API 0.7.62.1 084b4234", "osm3s": {"timestamp_osm_base": "2024-05-02T21:47:30Z", "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."}, "elements": [{"type": "node", "id": 2777517246, "lat": 54.5944275, "lon": 52.4481907, "tags": {"amenity": "bicycle_parking"}}]}

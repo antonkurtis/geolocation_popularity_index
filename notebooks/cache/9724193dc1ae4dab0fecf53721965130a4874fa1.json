@@ -1,0 +1,1 @@
+{"version": 0.6, "generator": "Overpass API 0.7.62.1 084b4234", "osm3s": {"timestamp_osm_base": "2024-05-03T01:51:10Z", "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."}, "elements": [{"type": "node", "id": 4464677952, "lat": 54.1067229, "lon": 54.1049714, "tags": {"amenity": "bar", "name": "Beerloga"}}]}

@@ -1,0 +1,71 @@
+import numpy as np
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import minmax_scale
+from catboost import Pool
+from sklearn.metrics import f1_score
+from datetime import datetime
+from catboost import CatBoostClassifier
+import glob
+import json
+
+from scr import *
+
+DEFAULT_RANDOM_SEED = 42
+
+def inference_model(lats:list, longs:list, atm:str) -> None:
+    
+    seedBasic(DEFAULT_RANDOM_SEED)
+
+    fls = [x.split('/')[-1] for x in glob.glob('./models/*')]
+
+    best_score = 0
+    for mdl in fls:
+        score = float(mdl.split('.c')[0].split('_')[2].split(':')[-1])
+        if score > best_score:
+            best_score = score
+            best_model = mdl
+
+    model = CatBoostClassifier()
+    model.load_model(f'./models/{best_model}')
+
+    df = pd.DataFrame({'lat':lats, "long":longs, 'atm_group':atm})
+    df = get_area_features(df)
+
+    with open('./data/objects.json') as json_file:
+        data = json.load(json_file)
+
+    df = get_objects(data, df)
+    df = get_population(df)
+
+    cat_features=[
+        'atm_group', 'city', 'city_area',
+        'city_district', 'federal_district',
+        'administrative'
+        ]
+
+    df.replace('', np.nan, inplace=True)
+    df[cat_features] = df[cat_features].fillna('no_data')
+    df['administrative'] = df['administrative'].apply(str)
+    df['atm_group'] = df['atm_group'].apply(str)
+    df = df.fillna(0)
+
+    df.reset_index(drop=True, inplace=True)
+
+    test_pool = Pool(
+        df,
+        cat_features=cat_features
+        )
+
+    predict = model.predict(test_pool)
+    df['predict'] = predict
+
+    print(df['predict'])
+
+
+lat = [55.805827]
+long = [37.515146]
+atm = ['32.0']
+
+inference_model(lat, long, atm)
