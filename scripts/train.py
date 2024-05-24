@@ -6,14 +6,17 @@ from sklearn.preprocessing import minmax_scale
 from catboost import Pool
 from sklearn.metrics import f1_score
 from datetime import datetime
-from catboost import CatBoostClassifier
 
-
-from scr import *
+from scripts.scr import *
 
 DEFAULT_RANDOM_SEED = 42
 
-def train_model() -> None:
+def train_model(
+        learning_rate:float=0.003,
+        iterations:int=30000,
+        early_stopping_rounds:int=2000,
+        task_type:str='CPU'
+        ) -> None:
     
     seedBasic(DEFAULT_RANDOM_SEED)
 
@@ -44,7 +47,7 @@ def train_model() -> None:
         df_train_val, y_train_val, 
         shuffle=True, 
         stratify=y_train_val, 
-        train_size=0.8,
+        train_size=0.85,
         random_state=DEFAULT_RANDOM_SEED
         )
     
@@ -68,15 +71,19 @@ def train_model() -> None:
 
     print('Train dataset shape: {}\n'.format(train_pool.shape))
 
-    model = fit_model(train_pool, validation_pool)
+    model = fit_model(train_pool, validation_pool, 
+                      learning_rate, iterations,
+                      early_stopping_rounds, task_type)
 
     err = f1_score(y_val, model.predict(X_val), average='micro')
     df_f1 = pd.DataFrame({'f1_score': [err]})
     df_f1.to_csv(f'./outputs/f1_score_{err}.csv', index=False)
     today_date = datetime.today().strftime('%d-%m-%Y')
 
+    model_name = f'catboost_model_f1:{err}_date:{today_date}'
+
     model.save_model(
         f'./models/catboost_model_f1:{err}_date:{today_date}'
         )
     
-train_model()
+    return err, model_name

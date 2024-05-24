@@ -7,6 +7,7 @@ from catboost import CatBoostClassifier
 import random
 import os
 from catboost import Pool
+import glob
 
 
 DEFAULT_RANDOM_SEED = 42
@@ -167,7 +168,13 @@ def get_population(df:pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def fit_model(train_pool:Pool, validation_pool:Pool, **kwargs) -> CatBoostClassifier:
+def fit_model(train_pool:Pool, 
+              validation_pool:Pool, 
+              learning_rate:float=0.003,
+              iterations:int=30000,
+              early_stopping_rounds:int=2000,
+              task_type:str='CPU',
+              **kwargs) -> CatBoostClassifier:
     '''
     Функция для тренировки модели.
     На вход подаются два Pool'а для обучения и валидации.
@@ -175,13 +182,13 @@ def fit_model(train_pool:Pool, validation_pool:Pool, **kwargs) -> CatBoostClassi
     параметры.
     '''
     model = CatBoostClassifier(
-        iterations=30000,
+        iterations=iterations,
         random_seed=DEFAULT_RANDOM_SEED,
-        learning_rate=0.001,
+        learning_rate=learning_rate,
         eval_metric='AUC',
-        early_stopping_rounds=2000,
+        early_stopping_rounds=early_stopping_rounds,
         use_best_model= True,
-        task_type='CPU',
+        task_type=task_type,
         **kwargs
     )
 
@@ -199,3 +206,19 @@ def seedBasic(seed:int=42) -> None:
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
+
+
+def get_f1_score() -> None:
+    '''
+    Функция отправляет пользвателю по запросу значение
+    F1 score лучшей модели на текущий момент.
+    '''
+    fls = [x.split('/')[-1] for x in glob.glob('./outputs/*')]
+
+    best_score = 0
+    for mdl in fls:
+        score = float(mdl.split('.c')[0].split('_')[-1])
+        if score > best_score:
+            best_score = score
+            best_model = mdl
+    return best_model

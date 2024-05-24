@@ -1,4 +1,4 @@
-from scr import get_area_features, get_objects, get_population
+from scripts.scr import get_area_features, get_objects, get_population
 import pandas as pd
 import json
 
@@ -30,5 +30,3 @@ def get_all_futures_dataset() -> None:
     print('Population parsing DONE!!!')
 
     geo_data.to_csv('./data/train_full.csv')
-
-get_all_futures_dataset()

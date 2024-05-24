@@ -5,12 +5,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import minmax_scale
 from catboost import Pool
 from sklearn.metrics import f1_score
-from datetime import datetime
 from catboost import CatBoostClassifier
 import glob
 import json
 
-from scr import *
+from scripts.scr import *
 
 DEFAULT_RANDOM_SEED = 42
 
@@ -61,11 +60,4 @@ def inference_model(lats:list, longs:list, atm:str) -> None:
     predict = model.predict(test_pool)
     df['predict'] = predict
 
-    print(df['predict'])
-
-
-lat = [55.805827]
-long = [37.515146]
-atm = ['32.0']
-
-inference_model(lat, long, atm)
+    return predict
