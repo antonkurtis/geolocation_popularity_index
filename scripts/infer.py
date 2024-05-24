@@ -13,7 +13,14 @@ from scripts.scr import *
 
 DEFAULT_RANDOM_SEED = 42
 
-def inference_model(lats:list, longs:list, atm:str) -> None:
+def inference_model(lats:list, longs:list, atm:str) -> list:
+    '''
+    Функция инференса модели.
+
+    lats: list список широт точек размещения коорднат
+    longs: list список долготы точек размещения коорднат
+    atm: str наименование банка-владельца банкомата
+    '''
     
     seedBasic(DEFAULT_RANDOM_SEED)
 

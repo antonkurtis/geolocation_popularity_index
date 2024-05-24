@@ -18,6 +18,8 @@ def get_area_features(df:pd.DataFrame) -> pd.DataFrame:
     функция принимает на вход Pandas DataFrame с
     координатами точек, собирает по ним географические признаки
     и возвращает Pandas DataFrame
+
+    df: Pandas DataFrame c коодинатами точек размещения банкоматов
     '''
     addresses = []
     cities, city_areas, city_district, federal_district  = [], [], [], []
@@ -64,6 +66,10 @@ def get_objects(tags:list, df:pd.DataFrame, flag:bool = False) -> pd.DataFrame:
     Так же flag переключает сбор даных
     для обучение (flag=True) и для инференса.
     Возвращает Pandas DataFrame
+
+    tags: list из тэгов объектов, по которым будет проводится сбор данных
+    df: Pandas DataFrame c коодинатами точек размещения банкоматов
+    flag: флаг, переключающий сбор данных для обучения и инференса
     '''
     if flag:
         col_names = []
@@ -140,6 +146,8 @@ def get_population(df:pd.DataFrame) -> pd.DataFrame:
     (строения, школы, дома и тп) и подсчитывает ориентировочное население
     в радиусе 100 метров.
     Возвращает Pandas DataFrame
+
+    df: Pandas DataFrame c собранными данными по объектам
     '''
     houses = ['semidetached_house', 'terrace', 'detached', 'house']
     apartments = ['apartments' , 'dormitory']
@@ -180,6 +188,13 @@ def fit_model(train_pool:Pool,
     На вход подаются два Pool'а для обучения и валидации.
     Возвращает обученную модель. В процессе обучения логируются
     параметры.
+
+    train_pool: Pool из библиотеки catboost с тренировочными данными
+    validation_pool: Pool из библиотеки catboost с тренировочными данными
+    learning_rate: int значение шага
+    iterations: int количество итераций
+    early_stopping_rounds: int количество итераций без улучшения скора модели
+    task_type: str тип ядра процессора для обучения модели
     '''
     model = CatBoostClassifier(
         iterations=iterations,
