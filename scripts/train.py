@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from types import UnionType
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import minmax_scale
@@ -17,7 +16,7 @@ def train_model(
         iterations:int=30000,
         early_stopping_rounds:int=2000,
         task_type:str='CPU'
-        ) -> UnionType[float, str]:
+        ):
     
     '''
     Фуункция обучения модели.

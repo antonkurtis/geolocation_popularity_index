@@ -325,8 +325,6 @@ def model_calc(message, lr, iterations, early_stopping_rounds):
                                 reply_markup=markup)
 
 
-
-
 def coords_get(message):
     coords = message.text
 
@@ -416,11 +414,5 @@ def atm_get(message, coords):
         bot.send_message(message.chat.id, f'{pred}')
     
   
-
-
-
-
-
-
 if __name__ == "__main__":
     bot.infinity_polling()
