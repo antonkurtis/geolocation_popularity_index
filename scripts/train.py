@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from sqlalchemy import create_engine
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import minmax_scale
 from catboost import Pool
@@ -12,9 +14,9 @@ from scripts.scr import *
 DEFAULT_RANDOM_SEED = 42
 
 def train_model(
-        learning_rate:float=0.003,
+        learning_rate:float=0.005,
         iterations:int=30000,
-        early_stopping_rounds:int=2000,
+        early_stopping_rounds:int=1800,
         task_type:str='CPU'
         ):
     
@@ -29,7 +31,10 @@ def train_model(
     
     seedBasic(DEFAULT_RANDOM_SEED)
 
-    df = pd.read_csv('./data/train_full.csv', index_col='Unnamed: 0')
+    engine = create_engine('postgresql://postgres:password@localhost:5432/postgres')
+
+    df = pd.read_sql_query("SELECT * FROM train_full", engine)
+    # df = pd.read_csv('./data/train_full.csv', index_col='Unnamed: 0')
 
     df['target'] = minmax_scale(df['target'], feature_range=(1, 5), axis=0)
     df['target'] = df['target'].apply(np.round).apply(int)

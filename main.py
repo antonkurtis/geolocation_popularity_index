@@ -2,11 +2,14 @@ import telebot
 import config
 from telebot import types
 import pandas as pd
+from datetime import datetime
 
 from scripts.scr import *
 from scripts.train import train_model
 from scripts.infer import inference_model
 from scripts.get_data import get_all_futures_dataset
+
+from airflow.api.client.local_client import Client
 
 bot = telebot.TeleBot(config.token)
 
@@ -56,12 +59,12 @@ def bot_answer(message):
             back = types.KeyboardButton('В начало')
             markup.add(back)
 
-            filename = get_f1_score()
-            df_f1 = pd.read_csv(f'./outputs/{filename}')
-            f1_sc = df_f1.loc[0]['f1_score']
+            filename, f1_sc = get_f1_score()
 
             bot.send_message(message.chat.id, f'F1 score для лучшей модели: {f1_sc}',
                              reply_markup=markup)
+            bot.send_message(message.chat.id, f'Название лучшей модели: {filename}',
+                    reply_markup=markup)
 
         elif message.text == 'Получить оценку размещения банкомата':
             
@@ -120,7 +123,12 @@ def get_data(message):
     elif message.text == 'Подтвердить':
         bot.send_message(message.chat.id, 'Запускается сбор геоданых.')
         bot.send_message(message.chat.id, 'Процесс займет около 40 часов...')
+        
+        NOW = datetime.now().strftime("%Y-%m-%d_%H:%M")
 
+        c = Client(None, None)
+        c.trigger_dag(dag_id='get_geodata', run_id=f'from_telebot_{NOW}', conf={})
+        
         get_all_futures_dataset()
         
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -159,6 +167,11 @@ def model_train(message):
     
     elif message.text == 'Использовать гиперпараметры по умолчинию':
         bot.send_message(message.chat.id, 'Начинается обучение модели. Ориентировочное время обучения - 15 минут.')
+
+        NOW = datetime.now().strftime("%Y-%m-%d_%H:%M")
+
+        c = Client(None, None)
+        c.trigger_dag(dag_id='catboost_model', run_id=f'from_telebot_{NOW}', conf={})
         
         err, model_name = train_model()
         
@@ -207,10 +220,18 @@ def get_data_train(message):
         bot.send_message(message.chat.id, 'Запускается сбор геоданых для последующего обучения модели')
         bot.send_message(message.chat.id, 'Процесс займет около 40 часов...')
 
+        NOW = datetime.now().strftime("%Y-%m-%d_%H:%M")
+
+        c = Client(None, None)
+        c.trigger_dag(dag_id='get_geodata', run_id=f'from_telebot_{NOW}', conf={})
+        
         get_all_futures_dataset()
         bot.send_message(message.chat.id, 'Сбор данных завершен.')
 
         bot.send_message(message.chat.id, 'Начинается обучение модели. Ориентировочное время обучения - 15 минут.')
+
+        c = Client(None, None)
+        c.trigger_dag(dag_id='catboost_model', run_id=f'from_telebot_{NOW}', conf={})
         
         err, model_name = train_model()
         
@@ -307,12 +328,19 @@ def model_calc(message, lr, iterations, early_stopping_rounds):
     
     bot.send_message(message.chat.id, 'Начинается обучение модели. Ориентировочное время обучения - 15 минут.')
     
+    NOW = datetime.now().strftime("%Y-%m-%d_%H:%M")
+
+    c = Client(None, None)
+    c.trigger_dag(dag_id='catboost_model', run_id=f'from_telebot_{NOW}', conf={})
+    
     err, model_name = train_model(
         learning_rate=float(lr),
         iterations=int(iterations),
         early_stopping_rounds=int(early_stopping_rounds),
         task_type=task_type
         )
+    
+
     
     bot.send_message(message.chat.id, f'F1 score текущей модели: {err}')
     bot.send_message(message.chat.id, f'Модель сохранена с названием {model_name}')
@@ -406,6 +434,8 @@ def atm_get(message, coords):
         except:
             bot.send_message(message.chat.id, 'Введите корректный формат координат')
 
+    bot.send_message(message.chat.id, 'Производится оценка, подождите ...')
+    
     predicts = inference_model(lats=lats,longs=longs,atm=atms)
 
     bot.send_message(message.chat.id, 'Оценка по 5-ти балльной шкале:')

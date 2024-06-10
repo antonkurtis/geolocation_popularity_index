@@ -33,8 +33,15 @@ def inference_model(lats:list, longs:list, atm:str) -> list:
             best_score = score
             best_model = mdl
 
-    model = CatBoostClassifier()
-    model.load_model(f'./models/{best_model}')
+    s3_model_name, s3_score = best_model_s3()
+
+    if s3_score > best_score:
+        model_path = load_model_s3(s3_model_name)
+        model = CatBoostClassifier()
+        model.load_model(model_path)
+    else:
+        model = CatBoostClassifier()
+        model.load_model(f'./models/{best_model}')
 
     df = pd.DataFrame({'lat':lats, "long":longs, 'atm_group':atm})
     df = get_area_features(df)

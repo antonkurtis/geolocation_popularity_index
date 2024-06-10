@@ -8,6 +8,8 @@ import random
 import os
 from catboost import Pool
 import glob
+import boto3
+import re
 
 
 DEFAULT_RANDOM_SEED = 42
@@ -178,9 +180,9 @@ def get_population(df:pd.DataFrame) -> pd.DataFrame:
 
 def fit_model(train_pool:Pool, 
               validation_pool:Pool, 
-              learning_rate:float=0.003,
+              learning_rate:float=0.005,
               iterations:int=30000,
-              early_stopping_rounds:int=2000,
+              early_stopping_rounds:int=1800,
               task_type:str='CPU',
               **kwargs) -> CatBoostClassifier:
     '''
@@ -223,17 +225,93 @@ def seedBasic(seed:int=42) -> None:
     np.random.seed(seed)
 
 
-def get_f1_score() -> None:
+def get_f1_score():
     '''
     Функция отправляет пользвателю по запросу значение
     F1 score лучшей модели на текущий момент.
     '''
-    fls = [x.split('/')[-1] for x in glob.glob('./outputs/*')]
+    fls = [x.split('/')[-1] for x in glob.glob('./models/*')]
 
     best_score = 0
     for mdl in fls:
-        score = float(mdl.split('.c')[0].split('_')[-1])
+        score = float(mdl.split('.c')[0].split('_')[2].split(':')[-1])
         if score > best_score:
             best_score = score
             best_model = mdl
-    return best_model
+
+    s3_model_name, s3_score = best_model_s3()
+
+    if s3_score > best_score:
+        best_score = s3_score
+        best_model = s3_model_name
+
+        return best_model, best_score
+    else:
+        return best_model, best_score
+
+
+def load_model_s3(model_name:str):
+    BUCKET = "diplom-kurtis-artifacts"
+    S3_KEY = "YCAJEygHPMIjhdmy_siL7RcH9"
+    S3_SECRET_KEY = "YCOJe0k3fu7UihBfSyrmykvB-VxbfMXNiu01P2Zz"
+
+    s3_resource = boto3.resource(
+        service_name="s3",
+        endpoint_url="https://storage.yandexcloud.net",
+        aws_access_key_id=S3_KEY,
+        aws_secret_access_key=S3_SECRET_KEY,
+    )
+
+    my_bucket = s3_resource.Bucket(BUCKET)
+
+    files_list = []
+    for objects in my_bucket.objects.filter(Prefix=f"{model_name}/"):
+        files_list.append(objects.key)
+
+    model_path = [model_n for model_n in files_list if 'model.cb' in model_n][0]
+
+    s3_object = s3_resource.Object(
+        bucket_name=BUCKET, 
+        key=model_path
+    )
+
+    s3_response = s3_object.get()
+    s3_object_body = s3_response.get('Body')
+    content = s3_object_body.read()
+
+    file_path = './s3_models/s3_model.cb'
+    with open(file_path, 'wb') as file:
+        file.write(content)
+
+    return file_path
+
+
+def best_model_s3():
+    BUCKET = "diplom-kurtis"
+    S3_KEY = "YCAJEygHPMIjhdmy_siL7RcH9"
+    S3_SECRET_KEY = "YCOJe0k3fu7UihBfSyrmykvB-VxbfMXNiu01P2Zz"
+
+    s3_resource = boto3.resource(
+        service_name="s3",
+        endpoint_url="https://storage.yandexcloud.net",
+        aws_access_key_id=S3_KEY,
+        aws_secret_access_key=S3_SECRET_KEY
+        )
+    
+    my_bucket = s3_resource.Bucket(BUCKET)
+    
+    obj_list, models_names, f1_sc = [], [], []
+    substring =  ".json"
+
+    for obj in my_bucket.objects.all():
+        if re.search(substring,  obj.key):
+            obj_list.append(obj.key)
+
+    for model in obj_list:
+        models_names.append(model.split('/')[0])
+        f1_sc.append(float(model.split('/')[-1].split('_')[-1].replace('.json', '')))
+
+    best_model_s3 = models_names[f1_sc.index(max(f1_sc))]
+    max_f1_csore = max(f1_sc)
+
+    return best_model_s3, max_f1_csore

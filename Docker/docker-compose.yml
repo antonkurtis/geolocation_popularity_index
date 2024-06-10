@@ -1,0 +1,29 @@
+_PIP_ADDITIONAL_REQUIREMENTS: apache-airflow-providers-docker==3.6.0
+
+volumes:
+  - ${AIRFLOW_PROJ_DIR:-.}/data/:/opt/airflow/data/
+  - /var/run/docker.sock:/var/run/docker.sock
+
+data-loader:
+  build:
+    context: ml_pipeline/data_loader
+  image: data-loader
+  restart: "no"
+
+model-prediction:
+  build:
+    context: ml_pipeline/model_prediction
+  image: model-prediction
+  restart: "no"
+
+docker-socket-proxy:
+  image: tecnativa/docker-socket-proxy:0.1.1
+  environment:
+    CONTAINERS: 1
+    IMAGES: 1
+    AUTH: 1
+    POST: 1
+  privileged: true
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+  restart: always
